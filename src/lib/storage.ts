@@ -69,27 +69,14 @@ export function defaultData(): AppData {
 }
 
 /**
- * Reads data left over in localStorage from before Firestore sync existed, so
- * a returning user's first sign-in migrates their existing data instead of
- * starting over. Returns fresh defaults if there's nothing to migrate.
+ * Removes data left over in localStorage from before Firestore sync existed.
+ * It's no longer read for anything (a shared device could otherwise leak one
+ * person's leftover local data into a different person's new account), so
+ * this just clears the stale key.
  */
-export function loadLegacyLocalData(): AppData {
-  if (typeof window === "undefined") return defaultData();
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultData();
-    const parsed = JSON.parse(raw) as Partial<AppData>;
-    return {
-      incomes: parsed.incomes ?? [],
-      categories: parsed.categories ?? defaultData().categories,
-      expenses: parsed.expenses ?? [],
-      goals: parsed.goals ?? defaultData().goals,
-      goalContributions: parsed.goalContributions ?? [],
-      recurringIncome: parsed.recurringIncome ?? null,
-    };
-  } catch {
-    return defaultData();
-  }
+export function clearLegacyLocalData(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(STORAGE_KEY);
 }
 
 export function exportDataToFile(data: AppData): void {

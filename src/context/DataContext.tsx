@@ -19,7 +19,7 @@ import type {
   RecurringIncome,
 } from "@/types";
 import { generateId } from "@/lib/id";
-import { defaultData, loadLegacyLocalData } from "@/lib/storage";
+import { clearLegacyLocalData, defaultData } from "@/lib/storage";
 import { db } from "@/lib/firebase";
 import { useAuth } from "./AuthContext";
 
@@ -65,6 +65,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    clearLegacyLocalData();
+  }, []);
+
+  useEffect(() => {
     if (!uid) {
       // Signed out: stop showing synced data from a previous session.
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -80,7 +84,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getDoc(ref)
       .then((snap) => {
         if (!cancelled && !snap.exists()) {
-          return setDoc(ref, loadLegacyLocalData());
+          // Fresh account: always seed with clean defaults. Never seed from
+          // this browser's local storage — on a shared device, that could
+          // leak a previous person's data into a new person's account.
+          return setDoc(ref, defaultData());
         }
       })
       .catch((err) => {
