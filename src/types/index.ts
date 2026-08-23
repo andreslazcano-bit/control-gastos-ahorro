@@ -43,12 +43,19 @@ export interface GoalContribution {
   note?: string;
 }
 
+/** A monthly income (e.g. salary) that gets auto-registered once per month. */
+export interface RecurringIncome {
+  amount: number;
+  label: string;
+}
+
 export interface AppData {
   incomes: Income[];
   categories: Category[];
   expenses: Expense[];
   goals: Goal[];
   goalContributions: GoalContribution[];
+  recurringIncome: RecurringIncome | null;
 }
 
 export const DATA_VERSION = 1;

@@ -16,6 +16,7 @@ import type {
   Goal,
   GoalContribution,
   Income,
+  RecurringIncome,
 } from "@/types";
 import { generateId } from "@/lib/id";
 import { defaultData, loadLegacyLocalData } from "@/lib/storage";
@@ -49,6 +50,8 @@ interface DataContextValue {
     amount: number,
     note?: string,
   ) => void;
+
+  setRecurringIncome: (recurringIncome: RecurringIncome | null) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -280,6 +283,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [writeData],
   );
 
+  const setRecurringIncome = useCallback(
+    (recurringIncome: RecurringIncome | null) => {
+      writeData((d) => ({ ...d, recurringIncome }));
+    },
+    [writeData],
+  );
+
   return (
     <DataContext.Provider
       value={{
@@ -301,6 +311,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updateGoal,
         deleteGoal,
         contributeToGoal,
+        setRecurringIncome,
       }}
     >
       {children}

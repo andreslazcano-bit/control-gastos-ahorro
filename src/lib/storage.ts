@@ -64,6 +64,7 @@ export function defaultData(): AppData {
       },
     ],
     goalContributions: [],
+    recurringIncome: null,
   };
 }
 
@@ -84,6 +85,7 @@ export function loadLegacyLocalData(): AppData {
       expenses: parsed.expenses ?? [],
       goals: parsed.goals ?? defaultData().goals,
       goalContributions: parsed.goalContributions ?? [],
+      recurringIncome: parsed.recurringIncome ?? null,
     };
   } catch {
     return defaultData();
@@ -121,5 +123,6 @@ export function parseImportedFile(text: string): AppData {
     expenses: parsed.expenses ?? [],
     goals: parsed.goals ?? [],
     goalContributions: parsed.goalContributions ?? [],
+    recurringIncome: parsed.recurringIncome ?? null,
   };
 }
