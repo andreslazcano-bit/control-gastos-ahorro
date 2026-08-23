@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DataProvider } from "@/context/DataContext";
 import PinGate from "@/components/PinGate";
 import NavBar from "@/components/NavBar";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,6 +19,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Control de gastos y ahorro",
   description: "Seguimiento personal de gastos, presupuestos y metas de ahorro.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Gastos",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#2a78d6",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -27,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-surface-page text-text-primary">
+        <ServiceWorkerRegistration />
         <DataProvider>
           <PinGate>
             <NavBar />
