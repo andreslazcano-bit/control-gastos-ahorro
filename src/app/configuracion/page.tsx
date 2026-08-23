@@ -5,6 +5,7 @@ import CategoryManager from "@/components/CategoryManager";
 import GoalManager from "@/components/GoalManager";
 import ExportImportBar from "@/components/ExportImportBar";
 import RecurringIncomeManager from "@/components/RecurringIncomeManager";
+import AccountManager from "@/components/AccountManager";
 
 export default function ConfiguracionPage() {
   const { ready } = useAppData();
@@ -29,6 +30,7 @@ export default function ConfiguracionPage() {
 
       <CategoryManager />
       <GoalManager />
+      <AccountManager />
     </div>
   );
 }
