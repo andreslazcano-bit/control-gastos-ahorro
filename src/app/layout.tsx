@@ -5,6 +5,7 @@ import { DataProvider } from "@/context/DataContext";
 import { AuthProvider } from "@/context/AuthContext";
 import AuthGate from "@/components/AuthGate";
 import NavBar from "@/components/NavBar";
+import DataErrorBanner from "@/components/DataErrorBanner";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const geistSans = Geist({
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AuthGate>
             <DataProvider>
               <NavBar />
+              <DataErrorBanner />
               <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
                 {children}
               </main>

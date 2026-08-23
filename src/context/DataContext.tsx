@@ -25,6 +25,7 @@ import { useAuth } from "./AuthContext";
 interface DataContextValue {
   data: AppData;
   ready: boolean;
+  error: string | null;
   replaceData: (data: AppData) => void;
   resetToDefaults: () => void;
 
@@ -58,6 +59,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const [data, setData] = useState<AppData>(defaultData());
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!uid) {
@@ -68,21 +70,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     setReady(false);
+    setError(null);
     const ref = doc(db, "users", uid);
     let cancelled = false;
 
-    getDoc(ref).then((snap) => {
-      if (!cancelled && !snap.exists()) {
-        setDoc(ref, loadLegacyLocalData());
-      }
-    });
+    getDoc(ref)
+      .then((snap) => {
+        if (!cancelled && !snap.exists()) {
+          return setDoc(ref, loadLegacyLocalData());
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? `No se pudieron cargar tus datos: ${err.message}`
+              : "No se pudieron cargar tus datos.",
+          );
+          setReady(true);
+        }
+      });
 
-    const unsubscribe = onSnapshot(ref, (snap) => {
-      if (snap.exists()) {
-        setData(snap.data() as AppData);
-      }
-      setReady(true);
-    });
+    const unsubscribe = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.exists()) {
+          setData(snap.data() as AppData);
+        }
+        setReady(true);
+      },
+      (err) => {
+        setError(`No se pudieron cargar tus datos: ${err.message}`);
+        setReady(true);
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -264,6 +285,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       value={{
         data,
         ready,
+        error,
         replaceData,
         resetToDefaults,
         addIncome,
