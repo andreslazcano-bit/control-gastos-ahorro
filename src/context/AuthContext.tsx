@@ -14,6 +14,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { isEmailAllowed } from "@/lib/allowedEmails";
 
 interface AuthContextValue {
   user: User | null;
@@ -32,6 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      if (nextUser && !isEmailAllowed(nextUser.email)) {
+        setError("Esta cuenta no está autorizada para usar esta app.");
+        firebaseSignOut(auth).catch(() => {});
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       setUser(nextUser);
       setLoading(false);
     });
