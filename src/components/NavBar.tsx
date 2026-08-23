@@ -18,7 +18,7 @@ export default function NavBar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface-card/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center gap-2 overflow-x-auto px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3 sm:px-6">
         <div className="mr-2 flex shrink-0 items-center gap-2 text-text-primary">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-accent">
             <svg
@@ -34,7 +34,7 @@ export default function NavBar() {
           </span>
           <span className="hidden font-semibold sm:inline">Control de gastos</span>
         </div>
-        <nav className="flex shrink-0 gap-1">
+        <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
           {LINKS.map((link) => {
             const active =
               link.href === "/"
@@ -55,7 +55,7 @@ export default function NavBar() {
             );
           })}
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+        <div className="flex shrink-0 items-center gap-2 pl-2">
           <ExportImportBar compact />
           <ThemeToggle />
           <UserMenu />
