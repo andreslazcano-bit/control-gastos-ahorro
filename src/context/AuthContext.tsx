@@ -8,9 +8,8 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import {
-  getRedirectResult,
   onAuthStateChanged,
-  signInWithRedirect,
+  signInWithPopup,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
@@ -32,10 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getRedirectResult(auth).catch((err) => {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión.");
-    });
-
     const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser);
       setLoading(false);
@@ -46,7 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function signInWithGoogle() {
     setError(null);
-    signInWithRedirect(auth, googleProvider).catch((err) => {
+    signInWithPopup(auth, googleProvider).catch((err) => {
+      // Popups blocked or closed by the user aren't real errors worth showing.
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request")
+      ) {
+        return;
+      }
+      console.error("Google sign-in failed", err);
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión.");
     });
   }
