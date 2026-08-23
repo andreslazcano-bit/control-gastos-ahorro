@@ -8,6 +8,7 @@ import NavBar from "@/components/NavBar";
 import DataErrorBanner from "@/components/DataErrorBanner";
 import RecurringIncomeSync from "@/components/RecurringIncomeSync";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,7 +42,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Applies the stored theme before first paint, so there's no flash
+            of the wrong theme while React hydrates. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-surface-page text-text-primary">
         <ServiceWorkerRegistration />
         <AuthProvider>
