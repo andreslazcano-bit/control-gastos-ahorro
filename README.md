@@ -39,9 +39,10 @@ npm install
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador. El PIN
-de acceso por defecto es `0556` (se puede cambiar editando la constante
-`CORRECT_PIN` en `src/components/PinGate.tsx`).
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador. Te va a
+pedir un PIN de 4 dígitos para entrar; el valor está definido en la constante
+`CORRECT_PIN` de `src/components/PinGate.tsx` y se puede cambiar ahí
+directamente.
 
 Otros comandos útiles:
 
