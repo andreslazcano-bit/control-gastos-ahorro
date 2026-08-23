@@ -2,8 +2,9 @@
 
 Aplicación web personal para llevar el control de ingresos, gastos por
 categoría (con presupuesto mensual) y metas de ahorro. Es de uso individual
-(sin login de usuarios) y **toda la información se guarda únicamente en el
-`localStorage` del navegador** — no hay backend ni base de datos.
+(un solo usuario, autenticado con Google) e instalable como app en el
+celular (PWA). Los datos se guardan en **Firestore** y se sincronizan en
+tiempo real entre todos los dispositivos donde inicies sesión.
 
 Incluye:
 
@@ -16,33 +17,46 @@ Incluye:
   por mes y categoría, con edición y eliminación.
 - Gráficos de tendencia de gasto mensual y distribución de gasto por
   categoría.
-- Exportar/Importar datos como archivo `.json` (respaldo manual, ya que todo
-  vive en el navegador).
-- Pantalla de bloqueo con PIN de 4 dígitos. **Esto es solo un filtro visual
-  básico, no seguridad real**: el PIN vive en el código del lado del
-  cliente, así que cualquiera con acceso al código fuente puede verlo. No lo
-  uses para proteger información sensible.
+- Exportar/Importar datos como archivo `.json` (respaldo manual adicional a
+  la sincronización automática).
+- Login con Google (Firebase Authentication) — es lo que te identifica como
+  dueño de los datos y permite que se sincronicen entre dispositivos.
+- Instalable en el iPhone: abre la URL en Safari → compartir → "Agregar a
+  pantalla de inicio". Queda como un ícono normal, en pantalla completa.
 
 ## Stack técnico
 
 - [Next.js](https://nextjs.org) (App Router) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com)
-- Persistencia 100% client-side vía `localStorage` (`src/lib/storage.ts`)
-- Sin variables de entorno ni servicios externos requeridos
+- [Firebase](https://firebase.google.com): Authentication (Google Sign-In) +
+  Firestore (base de datos, con persistencia offline)
+- PWA: manifest + íconos generados + service worker básico para uso offline
+
+## Configurar Firebase (una sola vez)
+
+1. Crea un proyecto en la [consola de Firebase](https://console.firebase.google.com).
+2. **Build → Firestore Database → Crear base de datos** (modo producción).
+   Pega las reglas de seguridad de [`firestore.rules`](./firestore.rules) en
+   la pestaña "Reglas" de Firestore — restringen cada documento a su propio
+   dueño.
+3. **Build → Authentication → Sign-in method → Google** → habilitar.
+4. **Authentication → Settings → Authorized domains** → agrega el dominio
+   donde vayas a desplegar (ej. `tu-proyecto.vercel.app`).
+5. En la página principal del proyecto, agrega una app Web (ícono `</>`) y
+   copia el objeto `firebaseConfig` que te muestra.
 
 ## Correr localmente
 
 Requisitos: Node.js 20+ y npm.
 
 ```bash
+cp .env.example .env.local   # y completa con los valores de tu firebaseConfig
 npm install
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador. Te va a
-pedir un PIN de 4 dígitos para entrar; el valor está definido en la constante
-`CORRECT_PIN` de `src/components/PinGate.tsx` y se puede cambiar ahí
-directamente.
+Abre [http://localhost:3000](http://localhost:3000) e inicia sesión con
+Google.
 
 Otros comandos útiles:
 
@@ -58,34 +72,36 @@ npm run lint    # linter
 2. Entra a [vercel.com](https://vercel.com), inicia sesión y elige
    **"Add New… → Project"**.
 3. Selecciona **"Import Git Repository"** y elige este repositorio.
-4. Vercel detecta automáticamente que es un proyecto Next.js — no hace falta
-   configurar variables de entorno ni build command personalizado. Solo haz
-   clic en **"Deploy"**.
-5. En un par de minutos tendrás una URL pública (`*.vercel.app`) con la app
-   funcionando.
+4. Antes de desplegar, agrega las variables de entorno de `.env.example`
+   (con los valores reales de tu `firebaseConfig`) en la sección
+   **"Environment Variables"** del import.
+5. Deploy. En un par de minutos tendrás una URL pública (`*.vercel.app`) con
+   la app funcionando.
 
 Cada vez que hagas `git push` a la rama principal, Vercel vuelve a desplegar
 automáticamente.
 
 ## Respaldo de tus datos
 
-Como los datos viven solo en el navegador (un dispositivo, un navegador),
-usa el botón **"Exportar datos"** (visible en la barra superior y en
-Configuración) periódicamente para descargar un `.json` de respaldo. Si
-necesitas restaurarlos —por ejemplo, en otro navegador o dispositivo— usa
-**"Importar datos"** y selecciona ese archivo. Importar reemplaza todos los
-datos actuales.
+Aunque los datos ya se sincronizan solos vía Firestore, el botón
+**"Exportar datos"** (barra superior y Configuración) sigue disponible para
+descargar un `.json` de respaldo manual. **"Importar datos"** reemplaza
+todos los datos actuales por el contenido de ese archivo.
 
 ## Estructura del proyecto
 
 ```
 src/
-  app/                 páginas (App Router): dashboard, metas, transacciones, configuración
-  components/          componentes de UI reutilizables
-  context/DataContext.tsx  estado global + operaciones CRUD sobre los datos
+  app/                  páginas (App Router): dashboard, metas, transacciones, configuración
+  components/           componentes de UI reutilizables
+  context/
+    AuthContext.tsx      estado de sesión (Firebase Auth, Google Sign-In)
+    DataContext.tsx       estado global + operaciones CRUD, sincronizadas con Firestore
   lib/
-    storage.ts         carga/guarda en localStorage, datos por defecto, export/import
-    calculations.ts    agregaciones mensuales (gasto por categoría, capacidad de ahorro, etc.)
-    format.ts          formato de moneda (CLP) y fechas
-  types/index.ts        tipos de TypeScript: Ingreso, Categoría, Gasto, Meta
+    firebase.ts          inicialización del SDK de Firebase (auth + Firestore)
+    storage.ts            datos por defecto, export/import, migración de datos legacy en localStorage
+    calculations.ts      agregaciones mensuales (gasto por categoría, capacidad de ahorro, etc.)
+    format.ts             formato de moneda (CLP) y fechas
+  types/index.ts          tipos de TypeScript: Ingreso, Categoría, Gasto, Meta
+firestore.rules           reglas de seguridad de Firestore (cada usuario solo ve sus datos)
 ```

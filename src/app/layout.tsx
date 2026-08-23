@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DataProvider } from "@/context/DataContext";
-import PinGate from "@/components/PinGate";
+import { AuthProvider } from "@/context/AuthContext";
+import AuthGate from "@/components/AuthGate";
 import NavBar from "@/components/NavBar";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
@@ -41,14 +42,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-surface-page text-text-primary">
         <ServiceWorkerRegistration />
-        <DataProvider>
-          <PinGate>
-            <NavBar />
-            <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
-              {children}
-            </main>
-          </PinGate>
-        </DataProvider>
+        <AuthProvider>
+          <AuthGate>
+            <DataProvider>
+              <NavBar />
+              <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+                {children}
+              </main>
+            </DataProvider>
+          </AuthGate>
+        </AuthProvider>
       </body>
     </html>
   );

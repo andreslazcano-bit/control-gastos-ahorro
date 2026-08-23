@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
+import { doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
 import type {
   AppData,
   Category,
@@ -17,7 +18,9 @@ import type {
   Income,
 } from "@/types";
 import { generateId } from "@/lib/id";
-import { defaultData, loadData, saveData } from "@/lib/storage";
+import { defaultData, loadLegacyLocalData } from "@/lib/storage";
+import { db } from "@/lib/firebase";
+import { useAuth } from "./AuthContext";
 
 interface DataContextValue {
   data: AppData;
@@ -50,127 +53,191 @@ interface DataContextValue {
 const DataContext = createContext<DataContextValue | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const uid = user?.uid ?? null;
+
   const [data, setData] = useState<AppData>(defaultData());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Deferred to a mount effect (not a lazy useState initializer) so the
-    // server-rendered markup (no localStorage) matches the client's first
-    // render, avoiding a hydration mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setData(loadData());
-    setReady(true);
-  }, []);
+    if (!uid) {
+      // Signed out: stop showing synced data from a previous session.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReady(false);
+      return;
+    }
 
-  useEffect(() => {
-    if (ready) saveData(data);
-  }, [data, ready]);
+    setReady(false);
+    const ref = doc(db, "users", uid);
+    let cancelled = false;
 
-  const replaceData = useCallback((next: AppData) => setData(next), []);
-  const resetToDefaults = useCallback(() => setData(defaultData()), []);
+    getDoc(ref).then((snap) => {
+      if (!cancelled && !snap.exists()) {
+        setDoc(ref, loadLegacyLocalData());
+      }
+    });
 
-  const addIncome = useCallback((income: Omit<Income, "id">) => {
-    setData((d) => ({
-      ...d,
-      incomes: [...d.incomes, { ...income, id: generateId() }],
-    }));
-  }, []);
+    const unsubscribe = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setData(snap.data() as AppData);
+      }
+      setReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [uid]);
+
+  const writeData = useCallback(
+    (updater: (current: AppData) => AppData) => {
+      if (!uid) return;
+      const next = updater(data);
+      setData(next);
+      setDoc(doc(db, "users", uid), next).catch(() => {
+        // Offline persistence queues the write locally; it'll sync once
+        // back online, so a rejected promise here isn't actionable.
+      });
+    },
+    [uid, data],
+  );
+
+  const replaceData = useCallback(
+    (next: AppData) => writeData(() => next),
+    [writeData],
+  );
+  const resetToDefaults = useCallback(
+    () => writeData(() => defaultData()),
+    [writeData],
+  );
+
+  const addIncome = useCallback(
+    (income: Omit<Income, "id">) => {
+      writeData((d) => ({
+        ...d,
+        incomes: [...d.incomes, { ...income, id: generateId() }],
+      }));
+    },
+    [writeData],
+  );
 
   const updateIncome = useCallback(
     (id: string, patch: Partial<Omit<Income, "id">>) => {
-      setData((d) => ({
+      writeData((d) => ({
         ...d,
         incomes: d.incomes.map((i) => (i.id === id ? { ...i, ...patch } : i)),
       }));
     },
-    [],
+    [writeData],
   );
 
-  const deleteIncome = useCallback((id: string) => {
-    setData((d) => ({ ...d, incomes: d.incomes.filter((i) => i.id !== id) }));
-  }, []);
+  const deleteIncome = useCallback(
+    (id: string) => {
+      writeData((d) => ({ ...d, incomes: d.incomes.filter((i) => i.id !== id) }));
+    },
+    [writeData],
+  );
 
-  const addExpense = useCallback((expense: Omit<Expense, "id">) => {
-    setData((d) => ({
-      ...d,
-      expenses: [...d.expenses, { ...expense, id: generateId() }],
-    }));
-  }, []);
+  const addExpense = useCallback(
+    (expense: Omit<Expense, "id">) => {
+      writeData((d) => ({
+        ...d,
+        expenses: [...d.expenses, { ...expense, id: generateId() }],
+      }));
+    },
+    [writeData],
+  );
 
   const updateExpense = useCallback(
     (id: string, patch: Partial<Omit<Expense, "id">>) => {
-      setData((d) => ({
+      writeData((d) => ({
         ...d,
         expenses: d.expenses.map((e) =>
           e.id === id ? { ...e, ...patch } : e,
         ),
       }));
     },
-    [],
+    [writeData],
   );
 
-  const deleteExpense = useCallback((id: string) => {
-    setData((d) => ({
-      ...d,
-      expenses: d.expenses.filter((e) => e.id !== id),
-    }));
-  }, []);
+  const deleteExpense = useCallback(
+    (id: string) => {
+      writeData((d) => ({
+        ...d,
+        expenses: d.expenses.filter((e) => e.id !== id),
+      }));
+    },
+    [writeData],
+  );
 
-  const addCategory = useCallback((category: Omit<Category, "id">) => {
-    setData((d) => ({
-      ...d,
-      categories: [...d.categories, { ...category, id: generateId() }],
-    }));
-  }, []);
+  const addCategory = useCallback(
+    (category: Omit<Category, "id">) => {
+      writeData((d) => ({
+        ...d,
+        categories: [...d.categories, { ...category, id: generateId() }],
+      }));
+    },
+    [writeData],
+  );
 
   const updateCategory = useCallback(
     (id: string, patch: Partial<Omit<Category, "id">>) => {
-      setData((d) => ({
+      writeData((d) => ({
         ...d,
         categories: d.categories.map((c) =>
           c.id === id ? { ...c, ...patch } : c,
         ),
       }));
     },
-    [],
+    [writeData],
   );
 
-  const deleteCategory = useCallback((id: string) => {
-    setData((d) => ({
-      ...d,
-      categories: d.categories.filter((c) => c.id !== id),
-      expenses: d.expenses.filter((e) => e.categoryId !== id),
-    }));
-  }, []);
+  const deleteCategory = useCallback(
+    (id: string) => {
+      writeData((d) => ({
+        ...d,
+        categories: d.categories.filter((c) => c.id !== id),
+        expenses: d.expenses.filter((e) => e.categoryId !== id),
+      }));
+    },
+    [writeData],
+  );
 
-  const addGoal = useCallback((goal: Omit<Goal, "id">) => {
-    setData((d) => ({
-      ...d,
-      goals: [...d.goals, { ...goal, id: generateId() }],
-    }));
-  }, []);
+  const addGoal = useCallback(
+    (goal: Omit<Goal, "id">) => {
+      writeData((d) => ({
+        ...d,
+        goals: [...d.goals, { ...goal, id: generateId() }],
+      }));
+    },
+    [writeData],
+  );
 
   const updateGoal = useCallback(
     (id: string, patch: Partial<Omit<Goal, "id">>) => {
-      setData((d) => ({
+      writeData((d) => ({
         ...d,
         goals: d.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)),
       }));
     },
-    [],
+    [writeData],
   );
 
-  const deleteGoal = useCallback((id: string) => {
-    setData((d) => ({
-      ...d,
-      goals: d.goals.filter((g) => g.id !== id),
-      goalContributions: d.goalContributions.filter((c) => c.goalId !== id),
-    }));
-  }, []);
+  const deleteGoal = useCallback(
+    (id: string) => {
+      writeData((d) => ({
+        ...d,
+        goals: d.goals.filter((g) => g.id !== id),
+        goalContributions: d.goalContributions.filter((c) => c.goalId !== id),
+      }));
+    },
+    [writeData],
+  );
 
   const contributeToGoal = useCallback(
     (goalId: string, amount: number, note?: string) => {
-      setData((d) => {
+      writeData((d) => {
         const contribution: GoalContribution = {
           id: generateId(),
           goalId,
@@ -189,7 +256,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    [],
+    [writeData],
   );
 
   return (

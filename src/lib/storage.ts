@@ -3,7 +3,6 @@ import type { AppData, ExportedData } from "@/types";
 import { DATA_VERSION } from "@/types";
 
 export const STORAGE_KEY = "gastos-ahorro:data";
-export const PIN_UNLOCK_KEY = "gastos-ahorro:unlocked";
 
 export function defaultData(): AppData {
   const catArriendo = generateId();
@@ -68,7 +67,12 @@ export function defaultData(): AppData {
   };
 }
 
-export function loadData(): AppData {
+/**
+ * Reads data left over in localStorage from before Firestore sync existed, so
+ * a returning user's first sign-in migrates their existing data instead of
+ * starting over. Returns fresh defaults if there's nothing to migrate.
+ */
+export function loadLegacyLocalData(): AppData {
   if (typeof window === "undefined") return defaultData();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -84,11 +88,6 @@ export function loadData(): AppData {
   } catch {
     return defaultData();
   }
-}
-
-export function saveData(data: AppData): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 export function exportDataToFile(data: AppData): void {

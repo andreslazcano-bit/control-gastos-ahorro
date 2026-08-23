@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ExportImportBar from "./ExportImportBar";
+import UserMenu from "./UserMenu";
 
 const LINKS = [
   { href: "/", label: "Dashboard" },
@@ -53,8 +54,9 @@ export default function NavBar() {
             );
           })}
         </nav>
-        <div className="ml-auto shrink-0 pl-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">
           <ExportImportBar compact />
+          <UserMenu />
         </div>
       </div>
     </header>
