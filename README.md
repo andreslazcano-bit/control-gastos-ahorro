@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Control de gastos y ahorro
 
-## Getting Started
+Aplicación web personal para llevar el control de ingresos, gastos por
+categoría (con presupuesto mensual) y metas de ahorro. Es de uso individual
+(sin login de usuarios) y **toda la información se guarda únicamente en el
+`localStorage` del navegador** — no hay backend ni base de datos.
 
-First, run the development server:
+Incluye:
+
+- Dashboard mensual con ingreso, gasto, capacidad de ahorro teórica y ahorro
+  real, más el avance de cada categoría de gasto contra su presupuesto.
+- Metas de ahorro con barra de progreso, aportes/retiros y protección
+  especial para metas marcadas como "protegidas" (pide confirmación antes de
+  reducir el acumulado).
+- Registro rápido de transacciones (gastos e ingresos) e historial filtrable
+  por mes y categoría, con edición y eliminación.
+- Gráficos de tendencia de gasto mensual y distribución de gasto por
+  categoría.
+- Exportar/Importar datos como archivo `.json` (respaldo manual, ya que todo
+  vive en el navegador).
+- Pantalla de bloqueo con PIN de 4 dígitos. **Esto es solo un filtro visual
+  básico, no seguridad real**: el PIN vive en el código del lado del
+  cliente, así que cualquiera con acceso al código fuente puede verlo. No lo
+  uses para proteger información sensible.
+
+## Stack técnico
+
+- [Next.js](https://nextjs.org) (App Router) + TypeScript
+- [Tailwind CSS](https://tailwindcss.com)
+- Persistencia 100% client-side vía `localStorage` (`src/lib/storage.ts`)
+- Sin variables de entorno ni servicios externos requeridos
+
+## Correr localmente
+
+Requisitos: Node.js 20+ y npm.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador. El PIN
+de acceso por defecto es `0556` (se puede cambiar editando la constante
+`CORRECT_PIN` en `src/components/PinGate.tsx`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Otros comandos útiles:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build   # build de producción
+npm run start   # sirve el build de producción
+npm run lint    # linter
+```
 
-## Learn More
+## Desplegar en Vercel
 
-To learn more about Next.js, take a look at the following resources:
+1. Sube este repositorio a GitHub (o usa el que ya está creado).
+2. Entra a [vercel.com](https://vercel.com), inicia sesión y elige
+   **"Add New… → Project"**.
+3. Selecciona **"Import Git Repository"** y elige este repositorio.
+4. Vercel detecta automáticamente que es un proyecto Next.js — no hace falta
+   configurar variables de entorno ni build command personalizado. Solo haz
+   clic en **"Deploy"**.
+5. En un par de minutos tendrás una URL pública (`*.vercel.app`) con la app
+   funcionando.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Cada vez que hagas `git push` a la rama principal, Vercel vuelve a desplegar
+automáticamente.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Respaldo de tus datos
 
-## Deploy on Vercel
+Como los datos viven solo en el navegador (un dispositivo, un navegador),
+usa el botón **"Exportar datos"** (visible en la barra superior y en
+Configuración) periódicamente para descargar un `.json` de respaldo. Si
+necesitas restaurarlos —por ejemplo, en otro navegador o dispositivo— usa
+**"Importar datos"** y selecciona ese archivo. Importar reemplaza todos los
+datos actuales.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Estructura del proyecto
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/                 páginas (App Router): dashboard, metas, transacciones, configuración
+  components/          componentes de UI reutilizables
+  context/DataContext.tsx  estado global + operaciones CRUD sobre los datos
+  lib/
+    storage.ts         carga/guarda en localStorage, datos por defecto, export/import
+    calculations.ts    agregaciones mensuales (gasto por categoría, capacidad de ahorro, etc.)
+    format.ts          formato de moneda (CLP) y fechas
+  types/index.ts        tipos de TypeScript: Ingreso, Categoría, Gasto, Meta
+```
